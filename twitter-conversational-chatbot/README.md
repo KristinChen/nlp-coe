@@ -2,12 +2,12 @@
 
 ## Install virtual environment
 ```console
-conda create -n twitter_renv python=3.9
+conda create -n twitter_renv python=3.8 #Please keep python version equals to 3.8
 conda activate twitter_renv
 conda install --file requirements.txt
 
 # Add virtual environment in jupyter notebook
-conda install ipykernel
+conda install -c conda-forge ipykernel -y #ipykernel should be installed already
 python -m ipykernel install --name=twitter_renv
 jupyter notebook #launch jupyter notebook
 ```
