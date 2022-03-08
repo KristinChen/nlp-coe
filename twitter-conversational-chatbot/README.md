@@ -12,6 +12,13 @@ python -m ipykernel install --name=twitter_renv
 jupyter notebook #launch jupyter notebook
 ```
 
+## Update virtual environment
+```console
+conda list --explicit > requirements.txt
+```
+
+Toubleshoot to change encoding to 'ANSI' to read `requirements.txt`. [Reference](https://github.com/conda/conda/issues/9519)
+
 ## Prerequisite
 [Install Anaconda from here](https://www.anaconda.com/products/individual)
 
