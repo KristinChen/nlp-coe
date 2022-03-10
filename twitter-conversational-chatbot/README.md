@@ -1,18 +1,43 @@
 # Usage
 
-## Install virtual environment
+## Method 1: Install virtual environment using `environment.yml` (recommended)
+### 1. Install virtual environment
+```console
+conda env create --file environment.yml #a virtual environment named `twitter_venv` and it's dependencies will be created
+```
+
+### 2. Rename conda environment
+```console
+conda create --name i-don't-like-the-old-name --clone twitter_venv
+conda remove --name twitter_venv --all
+```
+
+### 3. Add virtual environment in jupyter notebook
+```console
+python -m ipykernel install --name=twitter_venv
+jupyter notebook #launch jupyter notebook [after adding it into your Path] (https://towardsdatascience.com/how-to-launch-jupyter-notebook-quickly-26e500ad4560)
+```
+
+
+### 4. Update virtual environment
+```console
+conda env export > environment.yml 
+
+
+## Method 2: Install virtual environment using `requirements.txt`
+### 1. Install virtual environment
 ```console
 conda create -n twitter_renv python=3.8 #Please keep python version equals to 3.8
 conda activate twitter_renv
 conda install --file requirements.txt
+```
 
-# Add virtual environment in jupyter notebook
-conda install -c conda-forge ipykernel -y #ipykernel should be installed already
+### 2. Add virtual environment in jupyter notebook
 python -m ipykernel install --name=twitter_renv
 jupyter notebook #launch jupyter notebook
 ```
 
-## Update virtual environment
+### 3. Update virtual environment
 ```console
 conda list --explicit > requirements.txt
 ```
