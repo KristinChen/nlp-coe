@@ -15,9 +15,9 @@ conda remove --name twitter_venv --all
 ### 3. Add virtual environment in jupyter notebook
 ```console
 python -m ipykernel install --name=twitter_venv
-jupyter notebook #launch jupyter notebook [after adding it into your Path] (https://towardsdatascience.com/how-to-launch-jupyter-notebook-quickly-26e500ad4560)
+jupyter notebook #launch jupyter notebook after adding it into your Path
 ```
-
+[How to launch your jupyter notebook from terminal](https://towardsdatascience.com/how-to-launch-jupyter-notebook-quickly-26e500ad4560)
 
 ### 4. Update virtual environment
 ```console
