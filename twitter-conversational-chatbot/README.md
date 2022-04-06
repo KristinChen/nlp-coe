@@ -24,3 +24,8 @@ jupyter notebook #launch jupyter notebook after adding it into your Path
 conda env export > environment.yml 
 ```
 
+### 5. Remove virtual environment
+```console
+conda env remove --name chatbot_renv
+```
+
