@@ -19,6 +19,8 @@ import pandas as pd
 import datefinder
 from datetime import datetime
 from thefuzz import fuzz
+# from pyresparser import ResumeParser
+import numpy as np
 
 def read_file(path):
     txt = extract_text(path, codec='utf-8')
@@ -109,7 +111,7 @@ def get_name(sentence_txt, tokens_txt): #-> list of person names
             if len(temp_person) > 0:# Comment: stop as long as you got the nltk_name
                 return temp_person
         if k > 1:
-            if (tokens_txt[k].lower() in indian_last_names) or (tokens_txt[k].lower() in chinese_last_names):
+            if tokens_txt[k].lower() in ref_names: #fuzzy matching
                 j = k - 1
                 return([tokens_txt[j] + " " + tokens_txt[k]]) #Comment: what if kristin (jiating) chen?
 
@@ -219,6 +221,24 @@ def extract_phd_degree_from_lines(txt):
             phd_degrees_lst.append(line.strip())
     return [' '.join(m.split()) for m in phd_degrees_lst]
 
+def extract_phd_degree_from_lines(txt):
+    replace_words = ["|", "/", "."]
+
+    lines_txt = [l.strip() for l in txt.split('\n') if len(l.strip()) > 0 and len(l.strip().split()) > 0]
+    phd_degrees_lst = []
+    for index, line in enumerate(lines_txt):
+        if re.match('(Ph\.D|PhD|PhD\.)' ,line):
+            phd_degrees_lst.append(line.strip())
+    if len(phd_degrees_lst)>0:
+        phd_deg = [' '.join(m.split()) for m in phd_degrees_lst][0]
+        phd_deg1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",phd_deg)
+        phd_deg2 = re.sub("Current|Cumulative|GPA"," ",phd_deg1)
+        for punct in replace_words:
+            if punct in phd_deg2:
+                phd_deg2 = phd_deg2.replace(punct," ")
+    else:
+        phd_deg2 = None
+    return phd_deg2
 # ------------------------------------
 neglect_words = [
     'MSSQL',
@@ -310,6 +330,23 @@ def is_valid_date(txt):
     else:
         return False
 
+
+# replace_words = ["|","/","."]
+# sample_txt = "Master of Science Information Systems | 3.54/4 Cumulative Current GPA January 2021"
+# sample_txt = "Master of Professional Studies in Data Science, GPA: 3.74"
+# sample_txt = "Master of Science in Business Analytics, Focus Area: Data Science GPA: 4.0"
+# sample_txt = "Bachelor of Technology in Chemical Engineering; Cumulative GPA: 8.57/10.0"
+# sample_txt = "'Bachelor of Science in Industrial Engineering, summa cum laude (Equiv. GPA: 3.9) June 2011 â€“ June 2016'"
+# sample_txt1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",sample_txt)
+# sample_txt2 = re.sub("Current|Cumulative|GPA"," ",sample_txt1)
+# #sample_txt3 = re.sub(r'[\w\s]'," ",sample_txt2)
+# for punct in replace_words:
+#     if punct in sample_txt2:
+#         sample_txt2 = sample_txt2.replace(punct," ")
+#
+# re.sub(r'\|.*Equiv\.|Current|Cumulative|GPA.*',"",sample_txt)
+
+
 def extract_master_degree_from_lines(txt):
     year ="(\d{4})"
     month = "((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?))"
@@ -328,6 +365,43 @@ def extract_master_degree_from_lines(txt):
         return [' '.join(m.split()) for m in master_degrees_lst]
     else:
         return [' '.join(m.split()) for m in ms_lst]
+
+def extract_master_degree_from_lines(txt):
+    year ="(\d{4})"
+    month = "((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?))"
+    replace_words = ["|", "/", "."]
+
+    lines_txt = [l.strip() for l in txt.split('\n') if len(l.strip()) > 0 and len(l.strip().split()) > 0]
+    master_degrees_lst = []
+    ms_lst = []
+    for index, line in enumerate(lines_txt):
+        if re.match('(?i:Master)' ,line):
+            master_degrees_lst.append(line.strip())
+        if re.match('MS|M\.S\.|MA|M\.A\.|MBA|M\.S\.E|M\.tech' ,line):
+            ms_lst.append(line.strip())
+    if len(master_degrees_lst) > 0:
+        # cleaned_master_degress_lst = []
+        # for d in master_degrees_lst:
+        #     cleaned_master_degress_lst.append(' '.join([m for m in d.split() if m != month or not m.isdigit()]))
+        mast_deg = [' '.join(m.split()) for m in master_degrees_lst][0]
+        mast_deg1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",mast_deg)
+        mast_deg2 = re.sub("Current|Cumulative|GPA"," ",mast_deg1)
+        for punct in replace_words:
+            if punct in mast_deg2:
+                mast_deg2 = mast_deg2.replace(punct," ")
+        return mast_deg2
+    elif len(ms_lst) > 0:
+        mast_deg = [' '.join(m.split()) for m in ms_lst][0]
+        mast_deg1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",mast_deg)
+        mast_deg2 = re.sub("Current|Cumulative|GPA"," ",mast_deg1)
+        for punct in replace_words:
+            if punct in mast_deg2:
+                mast_deg2 = mast_deg2.replace(punct," ")
+        print(mast_deg2)
+        return mast_deg2
+    else:
+        mast_deg2 = None
+        return mast_deg2
 # ---------------------------------
 # doesn't match: \nBachelors of Management Studies (concentration in marketing)
 def extract_bachelor_degree(txt):
@@ -360,6 +434,39 @@ def extract_bachelor_degree_from_lines(txt):
     else:
         return [' '.join(m.split()) for m in ba_set]
 
+def extract_bachelor_degree_from_lines(txt):
+    replace_words = ["|", "/", "."]
+
+    lines_txt = [l.strip() for l in txt.split('\n') if len(l.strip()) > 0 and len(l.strip().split()) > 0]
+    bachelors_set = []
+    ba_set = []
+    for index, line in enumerate(lines_txt):
+        if re.match('(?i:Bachelor)' ,line):
+            bachelors_set.append(line.strip())
+        if re.match('BS|B\.S\.|BA|B\.A\.|B\.S\.E|B\.tech' ,line):
+            ba_set.append(line.strip())
+
+    if len(bachelors_set) > 0:
+        bach_deg = [' '.join(m.split()) for m in bachelors_set][0]
+        bach_deg1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",bach_deg)
+        bach_deg2 = re.sub("Current|Cumulative|GPA"," ",bach_deg1)
+        for punct in replace_words:
+            if punct in bach_deg2:
+                bach_deg2 = bach_deg2.replace(punct," ")
+        print(bach_deg2)
+        return bach_deg2
+    elif len(ba_set) > 0:
+        bach_deg = [' '.join(m.split()) for m in ba_set][0]
+        bach_deg1 = re.sub("\d+|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)", " ",bach_deg)
+        bach_deg2 = re.sub("Current|Cumulative|GPA"," ",bach_deg1)
+        for punct in replace_words:
+            if punct in bach_deg2:
+                bach_deg2 = bach_deg2.replace(punct," ")
+        print(bach_deg2)
+        return bach_deg2
+    else:
+        bach_deg2 = None
+        return bach_deg2
 # -----------------------------------------------------
 def extract_phd_school(txt):
     p = re.compile(
@@ -382,9 +489,6 @@ def extract_bach_school(txt):
         return m.group(0).split("\n")[0]
 
 # date -------------------------------------------------------------------------
-
-
-
 
 
 def extract_master_date(txt1):
@@ -582,29 +686,29 @@ def parse_resume(path):
 
 # -------------- execution ------------------------------------------------------
 folder = glob.glob(r"./data/resume_samples/*")
-# file_path = folder[11]
-# sample_txt = read_file(file_path)
+file_path = folder[52]
+sample_txt = read_file(file_path)
 # sample_txt2 = read_file2(file_path)
-# tokens_txt = preprocess_text(sample_txt)
+tokens_txt = preprocess_text(sample_txt)
 #
-# get_name(sentence_txt=sample_txt, tokens_txt = tokens_txt)
-# get_name_from_ner(sample_txt)
-# get_name_from_pos(tokens_txt)
-# get_name_from_ref(tokens_txt)
-# extract_education(sample_txt[0:1000])
+get_name(sentence_txt=sample_txt, tokens_txt = tokens_txt)
+get_name_from_ner(sample_txt)
+get_name_from_pos(tokens_txt)
+get_name_from_ref(tokens_txt)
+extract_education(sample_txt[0:1000])
 # doc = nlp(sample_txt)
-# extract_phd_degree(sample_txt)
-# extract_phd_degree_from_lines(sample_txt)
-# extract_phd_school(sample_txt)
-# extract_phd_date(sample_txt)
-# extract_master_degree(sample_txt)
-# extract_master_degree_from_lines(sample_txt)
-# extract_ms_school(sample_txt)
-# extract_master_date(sample_txt)
-# extract_bachelor_degree(sample_txt)
-# extract_bachelor_degree_from_lines(sample_txt)
-# extract_bach_school(sample_txt)
-# extract_bachelor_date(sample_txt)
+extract_phd_degree(sample_txt)
+extract_phd_degree_from_lines(sample_txt)
+extract_phd_school(sample_txt)
+extract_phd_date(sample_txt)
+extract_master_degree(sample_txt)
+extract_master_degree_from_lines(sample_txt)
+extract_ms_school(sample_txt)
+extract_master_date(sample_txt)
+extract_bachelor_degree(sample_txt)
+extract_bachelor_degree_from_lines(sample_txt)
+extract_bach_school(sample_txt)
+extract_bachelor_date(sample_txt)
 
 df = pd.DataFrame()
 for f in folder:
@@ -613,10 +717,180 @@ for f in folder:
 
 df.to_csv('matched_resumes.csv', index=False)
 
+df.shape #201-182?
 # # --------- performance ------------------------------
-# gt_df = pd.read_csv('./Data/GroundTruth-Sheet2.csv', index_col=False)
-# gt_df.shape #182
+gt_df = pd.read_csv('./Data/GroundTruth.csv', index_col=False)
+gt_df.shape #182
 # gt_df.columns
 # gt_df.master_graduation_date
-# fuzz.token_sort_ratio("KRISTIN J CHEN", "KRISTIN JIATING CHEN")
+gt_df.columns
+df.columns
 
+compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+compared_df.columns
+compared_df.shape
+
+def unlist(x):
+    if isinstance(x, list) and len(x) != 0:
+        for n in x:
+            return n
+    if x is None:
+        return ''
+    else:
+        return ''
+
+# -------------------- NAME -----------------------------------------------------------
+compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+
+compared_df['full_name'] = compared_df['full_name'].fillna('')
+compared_df['full_name'].replace(to_replace=[None], value='', inplace=True)
+compared_df['full_name'] = compared_df.full_name.apply(lambda x: str(x).capitalize())
+
+
+compared_df['unlisted_name'] = compared_df.name.apply(lambda x:unlist(x))
+compared_df['unlisted_name'] = compared_df['unlisted_name'].fillna('')
+compared_df['unlisted_name'].replace(to_replace=[None], value='', inplace=True)
+compared_df['unlisted_name'] = compared_df.unlisted_name.apply(lambda x:str(x).capitalize())
+
+compared_df.columns
+compared_df['unlisted_name_ner'] = compared_df.name_ner.apply(lambda x:unlist(x))
+compared_df['unlisted_name_ner'] = compared_df['unlisted_name_ner'].fillna('')
+compared_df['unlisted_name_ner'].replace(to_replace=[None], value='', inplace=True)
+compared_df['unlisted_name_ner'] = compared_df.unlisted_name_ner.apply(lambda x:str(x).capitalize())
+
+compared_df['unlisted_name_pos'] = compared_df.name_pos.apply(lambda x:unlist(x))
+compared_df['unlisted_name_pos'] = compared_df['unlisted_name_pos'].fillna('')
+compared_df['unlisted_name_pos'].replace(to_replace=[None], value='', inplace=True)
+compared_df['unlisted_name_pos'] = compared_df.unlisted_name_pos.apply(lambda x:str(x).capitalize())
+
+compared_df['unlisted_name_ref'] = compared_df.name_ref.apply(lambda x:unlist(x))
+compared_df['unlisted_name_ref'] = compared_df['unlisted_name_ref'].fillna('')
+compared_df['unlisted_name_ref'].replace(to_replace=[None], value='', inplace=True)
+compared_df['unlisted_name_ref'] = compared_df.unlisted_name_ref.apply(lambda x:str(x).capitalize())
+
+comp_name1 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name'], x['full_name']), axis = 1)
+np.mean(comp_name1) #78.68159203980099
+comp_name2 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ner'], x['full_name']), axis = 1)
+np.mean(comp_name2) #44.55223880597015
+comp_name3 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_pos'], x['full_name']), axis = 1)
+np.mean(comp_name3) #51.78606965174129
+comp_name4 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ref'], x['full_name']), axis = 1)
+np.mean(comp_name4) #54.17910447761194
+
+# -------------------- PHONE NUMBER -----------------------------------------------------
+compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+
+compared_df.columns
+# phone_number, phone
+from string import punctuation
+
+def clean_phone_number(x):
+    if isinstance(x, str):
+        return_x = ''.join([p for p in x if p not in punctuation]).replace(" ", "")
+        print(return_x)
+        if len(return_x) != 10 and return_x.startswith('1'):
+            return return_x[1:]
+        else:
+            return return_x
+    if not isinstance(x, str):
+        return ''
+
+compared_df['number_pred'] = compared_df.phone_number.apply(lambda x:clean_phone_number(x))
+compared_df['phone_ref'] = compared_df.phone.apply(lambda x:clean_phone_number(x))
+
+
+comp_phone = compared_df.apply(lambda x: fuzz.ratio(x['number_pred'], x['phone_ref']), axis = 1)
+np.mean(comp_phone) #83.18905472636816
+
+# --------------- EMAIL ----------------------
+compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+compared_df.columns #email_x #email_y
+compared_df.email_x
+compared_df.email_y
+
+def unlist(x):
+    if isinstance(x, list) and len(x) != 0:
+        for n in x:
+            return n
+    if x is None:
+        return ''
+    else:
+        return ''
+
+compared_df['email_pref'] = compared_df.email_x.apply(lambda x:unlist(x).lower().replace(" ", ""))
+compared_df['email_true'] = compared_df.email_y.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", ''))
+comp_email = compared_df.apply(lambda x: fuzz.ratio(x['email_pref'], x['email_true']), axis = 1)
+np.mean(comp_email) #88.20398009950249
+
+# ---------------------------- EDUCATION (to be cleaned) ---------------------------------------------------------------------------------------
+compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+compared_df.columns
+
+compared_df.master_degree_x
+compared_df.master_degree2
+
+compared_df.master_degree_y
+compared_df.Master_Degree_2
+compared_df.Master_Degree_3
+
+def clean_degree_set(set_x):
+    if not isinstance(set_x, set):
+        return ''
+    else:
+        x = unlist(list(set_x))
+        print(x)
+        if isinstance(x, str):
+            return_x = ''.join([p for p in x if p not in punctuation])
+            print(return_x)
+            return re.sub(' +', ' ', return_x).lower()
+
+def clean_degree_string(string_x):
+
+    if isinstance(string_x, str):
+        return_x = ''.join([p for p in string_x if p not in punctuation])
+        print(return_x)
+        return re.sub(' +', ' ', return_x).lower()
+    else:
+        return ''
+
+
+compared_df['cleaned_master_degree_pred2'][196]
+compared_df['cleaned_master_degree_pred1'][196]
+compared_df['cleaned_master_degree_true1'][196]
+compared_df.master_degree_x[196]
+compared_df.master_degree2[196]
+compared_df['cleaned_master_degree_true1'][196]
+
+compared_df['cleaned_master_degree_pred1'] = compared_df.master_degree_x.apply(lambda x:clean_degree_set(x))
+compared_df['cleaned_master_degree_pred2'] = compared_df.master_degree2.apply(lambda x:clean_degree_string(x))
+
+compared_df['cleaned_master_degree_true1'] = compared_df.master_degree_y.apply(lambda x:clean_degree_string(x))
+compared_df['cleaned_master_degree_true2'] = compared_df.Master_Degree_2.apply(lambda x:clean_degree_string(x))
+compared_df['cleaned_master_degree_true3'] = compared_df.Master_Degree_3.apply(lambda x:clean_degree_string(x))
+
+compared_df.Master_Degree_2[compared_df.Master_Degree_2.notnull()] #15
+compared_df['cleaned_master_degree_true1'][15]
+compared_df['cleaned_master_degree_true2'][15]
+
+compared_df['cleaned_master_degree_pred2'][15]
+compared_df['cleaned_master_degree_pred1'][15]
+
+fuzz.ratio(compared_df['cleaned_master_degree_pred2'][15], compared_df['cleaned_master_degree_true1'][15])
+fuzz.ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
+
+fuzz.token_sort_ratio(compared_df['cleaned_master_degree_pred2'][15], compared_df['cleaned_master_degree_true1'][15])
+fuzz.token_sort_ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
+
+fuzz.token_set_ratio(compared_df['cleaned_master_degree_true1'][15], compared_df['cleaned_master_degree_pred2'][15])
+fuzz.token_set_ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
+
+# ---------------------- compare to other packages -------------------------------------------------------------------
+from resume_parser import resumeparse
+# data = resumeparse.read_file('/path/to/resume/file')
+# data = ResumeParser(file_path).get_extracted_data()
+
+# temp_person = []
+# tagged = nlp(sentence_txt[0:200]) #Comment: assume names exist in the top section
+#     for word in tagged.ents:
+#         if word.label_ == "PERSON":
+#             temp_person.append(word.text)
