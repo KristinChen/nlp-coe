@@ -719,14 +719,16 @@ df.to_csv('matched_resumes.csv', index=False)
 
 df.shape #201-182?
 # # --------- performance ------------------------------
+df = pd.read_csv('./matched_resumes.csv', index_col=False)
 gt_df = pd.read_csv('./Data/GroundTruth.csv', index_col=False)
+compared_df = pd.merge(gt_df, df, how = 'left', on = 'index')
+
 gt_df.shape #182
 # gt_df.columns
 # gt_df.master_graduation_date
 gt_df.columns
 df.columns
-
-compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
+df.shape
 compared_df.columns
 compared_df.shape
 
@@ -736,50 +738,53 @@ def unlist(x):
             return n
     if x is None:
         return ''
+    if isinstance(x, str):
+        return x
     else:
-        return ''
+        return x
 
 # -------------------- NAME -----------------------------------------------------------
-compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
-
 compared_df['full_name'] = compared_df['full_name'].fillna('')
 compared_df['full_name'].replace(to_replace=[None], value='', inplace=True)
 compared_df['full_name'] = compared_df.full_name.apply(lambda x: str(x).capitalize())
+compared_df['full_name'] = compared_df['full_name'].apply(lambda x:x.lower())
 
-
-compared_df['unlisted_name'] = compared_df.name.apply(lambda x:unlist(x))
+compared_df['unlisted_name'] = compared_df.name.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", ''))
 compared_df['unlisted_name'] = compared_df['unlisted_name'].fillna('')
 compared_df['unlisted_name'].replace(to_replace=[None], value='', inplace=True)
-compared_df['unlisted_name'] = compared_df.unlisted_name.apply(lambda x:str(x).capitalize())
+compared_df['unlisted_name'] = compared_df['unlisted_name'].apply(lambda x:x.lower())
 
-compared_df.columns
-compared_df['unlisted_name_ner'] = compared_df.name_ner.apply(lambda x:unlist(x))
+compared_df['unlisted_name_ner'] = compared_df.name_ner.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", '').replace("\\n", ''))
 compared_df['unlisted_name_ner'] = compared_df['unlisted_name_ner'].fillna('')
 compared_df['unlisted_name_ner'].replace(to_replace=[None], value='', inplace=True)
-compared_df['unlisted_name_ner'] = compared_df.unlisted_name_ner.apply(lambda x:str(x).capitalize())
+compared_df['unlisted_name_ner'] = compared_df['unlisted_name_ner'].apply(lambda x:x.lower())
 
-compared_df['unlisted_name_pos'] = compared_df.name_pos.apply(lambda x:unlist(x))
+compared_df['unlisted_name_pos'] = compared_df.name_pos.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", '').replace("'", '').replace("'", ''))
 compared_df['unlisted_name_pos'] = compared_df['unlisted_name_pos'].fillna('')
 compared_df['unlisted_name_pos'].replace(to_replace=[None], value='', inplace=True)
-compared_df['unlisted_name_pos'] = compared_df.unlisted_name_pos.apply(lambda x:str(x).capitalize())
+compared_df['unlisted_name_pos'] = compared_df['unlisted_name_pos'].apply(lambda x:x.lower())
 
-compared_df['unlisted_name_ref'] = compared_df.name_ref.apply(lambda x:unlist(x))
+compared_df['unlisted_name_ref'] = compared_df.name_ref.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", '').replace("'", '').replace("'", ''))
 compared_df['unlisted_name_ref'] = compared_df['unlisted_name_ref'].fillna('')
 compared_df['unlisted_name_ref'].replace(to_replace=[None], value='', inplace=True)
-compared_df['unlisted_name_ref'] = compared_df.unlisted_name_ref.apply(lambda x:str(x).capitalize())
+compared_df['unlisted_name_ref'] = compared_df['unlisted_name_ref'].apply(lambda x:x.lower())
 
 comp_name1 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name'], x['full_name']), axis = 1)
-np.mean(comp_name1) #78.68159203980099
-comp_name2 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ner'], x['full_name']), axis = 1)
-np.mean(comp_name2) #44.55223880597015
-comp_name3 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_pos'], x['full_name']), axis = 1)
-np.mean(comp_name3) #51.78606965174129
-comp_name4 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ref'], x['full_name']), axis = 1)
-np.mean(comp_name4) #54.17910447761194
+token_set_comp_name1 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['unlisted_name'], x['full_name']), axis = 1)
+token_sort_comp_name1 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['unlisted_name'], x['full_name']), axis = 1)
+
+np.mean(comp_name1) #76.1208
+np.mean(token_set_comp_name1) #79.6098
+np.mean(token_sort_comp_name1) #75.8187
+
+# comp_name2 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ner'], x['full_name']), axis = 1)
+# np.mean(comp_name2) #44.55223880597015
+# comp_name3 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_pos'], x['full_name']), axis = 1)
+# np.mean(comp_name3) #51.78606965174129
+# comp_name4 = compared_df.apply(lambda x: fuzz.ratio(x['unlisted_name_ref'], x['full_name']), axis = 1)
+# np.mean(comp_name4) #54.17910447761194
 
 # -------------------- PHONE NUMBER -----------------------------------------------------
-compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
-
 compared_df.columns
 # phone_number, phone
 from string import punctuation
@@ -800,38 +805,28 @@ compared_df['phone_ref'] = compared_df.phone.apply(lambda x:clean_phone_number(x
 
 
 comp_phone = compared_df.apply(lambda x: fuzz.ratio(x['number_pred'], x['phone_ref']), axis = 1)
-np.mean(comp_phone) #83.18905472636816
+np.mean(comp_phone) #81.4340
 
 # --------------- EMAIL ----------------------
-compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
 compared_df.columns #email_x #email_y
 compared_df.email_x
 compared_df.email_y
 
-def unlist(x):
-    if isinstance(x, list) and len(x) != 0:
-        for n in x:
-            return n
-    if x is None:
-        return ''
-    else:
-        return ''
-
-compared_df['email_pref'] = compared_df.email_x.apply(lambda x:unlist(x).lower().replace(" ", ""))
+compared_df['email_pref'] = compared_df.email_x.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", ''))
 compared_df['email_true'] = compared_df.email_y.apply(lambda x: str(x).replace("['", '').replace("']", '').replace("[", '').replace("]", ''))
 comp_email = compared_df.apply(lambda x: fuzz.ratio(x['email_pref'], x['email_true']), axis = 1)
-np.mean(comp_email) #88.20398009950249
+np.mean(comp_email) #98.5274
 
 # ---------------------------- EDUCATION (to be cleaned) ---------------------------------------------------------------------------------------
-compared_df = pd.merge(df, gt_df, how = 'left', on = 'index')
 compared_df.columns
 
+# add them together in a list
 compared_df.master_degree_x
-compared_df.master_degree2
-
-compared_df.master_degree_y
 compared_df.Master_Degree_2
 compared_df.Master_Degree_3
+
+compared_df.master_degree_y #remove {}
+compared_df.master_degree2
 
 def clean_degree_set(set_x):
     if not isinstance(set_x, set):
@@ -847,42 +842,49 @@ def clean_degree_set(set_x):
 def clean_degree_string(string_x):
 
     if isinstance(string_x, str):
-        return_x = ''.join([p for p in string_x if p not in punctuation])
-        print(return_x)
-        return re.sub(' +', ' ', return_x).lower()
+        # return_x = ''.join([p for p in string_x if p not in punctuation])
+        # print(return_x)
+        return re.sub(' +', ' ', string_x).lower()
     else:
         return ''
 
+compared_df.master_degree_x = compared_df.master_degree_x.apply(lambda x: clean_degree_string(x))
+compared_df.Master_Degree_2 = compared_df.Master_Degree_2.apply(lambda x: clean_degree_string(x))
+compared_df.Master_Degree_3 = compared_df.Master_Degree_3.apply(lambda x: clean_degree_string(x))
 
-compared_df['cleaned_master_degree_pred2'][196]
-compared_df['cleaned_master_degree_pred1'][196]
-compared_df['cleaned_master_degree_true1'][196]
-compared_df.master_degree_x[196]
-compared_df.master_degree2[196]
-compared_df['cleaned_master_degree_true1'][196]
+compared_df['cleaned_master_degree_y'] = compared_df.master_degree_y.apply(lambda x: str(x).replace("{'", '').replace("'}", '')).apply(lambda x: clean_degree_string(x))
+compared_df['cleaned_master_degree2'] = compared_df.master_degree2.apply(lambda x: clean_degree_string(x))
 
-compared_df['cleaned_master_degree_pred1'] = compared_df.master_degree_x.apply(lambda x:clean_degree_set(x))
-compared_df['cleaned_master_degree_pred2'] = compared_df.master_degree2.apply(lambda x:clean_degree_string(x))
+compared_df['all_masters_x'] = compared_df.master_degree_x + ' ' +  compared_df.Master_Degree_2 + ' ' + compared_df.Master_Degree_3
+compared_df['all_masters_x']= compared_df.all_masters_x.apply(lambda x: clean_degree_string(x))
 
-compared_df['cleaned_master_degree_true1'] = compared_df.master_degree_y.apply(lambda x:clean_degree_string(x))
-compared_df['cleaned_master_degree_true2'] = compared_df.Master_Degree_2.apply(lambda x:clean_degree_string(x))
-compared_df['cleaned_master_degree_true3'] = compared_df.Master_Degree_3.apply(lambda x:clean_degree_string(x))
+comp_master = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master) #61.6978
+comp_master2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master2) #70.3186
+comp_master3 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master3) #79.4890
 
-compared_df.Master_Degree_2[compared_df.Master_Degree_2.notnull()] #15
-compared_df['cleaned_master_degree_true1'][15]
-compared_df['cleaned_master_degree_true2'][15]
+comp_master21 = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
+np.mean(comp_master21) #59.6648
+comp_master22 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
+np.mean(comp_master22) #73.0054
+comp_master23 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
+np.mean(comp_master23) #67.7912
 
-compared_df['cleaned_master_degree_pred2'][15]
-compared_df['cleaned_master_degree_pred1'][15]
+# masters_comp = pd.concat([
+#     compared_df['index'],
+#     compared_df.master_degree_x,
+#     compared_df.Master_Degree_2,
+#     compared_df.Master_Degree_3,
+#     compared_df.all_masters_x,
+#            compared_df.cleaned_master_degree_y,
+#            compared_df.cleaned_master_degree2,
+#            comp_master,
+#            comp_master21
+#            ], axis = 1)
+# masters_comp.to_csv('masters_comp.csv', index=False)
 
-fuzz.ratio(compared_df['cleaned_master_degree_pred2'][15], compared_df['cleaned_master_degree_true1'][15])
-fuzz.ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
-
-fuzz.token_sort_ratio(compared_df['cleaned_master_degree_pred2'][15], compared_df['cleaned_master_degree_true1'][15])
-fuzz.token_sort_ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
-
-fuzz.token_set_ratio(compared_df['cleaned_master_degree_true1'][15], compared_df['cleaned_master_degree_pred2'][15])
-fuzz.token_set_ratio(compared_df['cleaned_master_degree_true2'][15], compared_df['cleaned_master_degree_pred2'][15])
 
 # ---------------------- compare to other packages -------------------------------------------------------------------
 from resume_parser import resumeparse
