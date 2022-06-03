@@ -817,18 +817,18 @@ compared_df['email_true'] = compared_df.email_y.apply(lambda x: str(x).replace("
 comp_email = compared_df.apply(lambda x: fuzz.ratio(x['email_pref'], x['email_true']), axis = 1)
 np.mean(comp_email) #98.5274
 
-# ---------------------------- EDUCATION (to be cleaned) ---------------------------------------------------------------------------------------
+# school ------------------------------------------------
 compared_df.columns
 
 # add them together in a list
-compared_df.master_degree_x
-compared_df.Master_Degree_2
-compared_df.Master_Degree_3
+compared_df.master_school_x
+compared_df.Master_school_2
+compared_df.Master_school_3
 
-compared_df.master_degree_y #remove {}
-compared_df.master_degree2
+compared_df.master_school_y #remove {}
 
-def clean_degree_set(set_x):
+
+def clean_school_set(set_x):
     if not isinstance(set_x, set):
         return ''
     else:
@@ -839,7 +839,7 @@ def clean_degree_set(set_x):
             print(return_x)
             return re.sub(' +', ' ', return_x).lower()
 
-def clean_degree_string(string_x):
+def clean_school_string(string_x):
 
     if isinstance(string_x, str):
         # return_x = ''.join([p for p in string_x if p not in punctuation])
@@ -848,42 +848,63 @@ def clean_degree_string(string_x):
     else:
         return ''
 
-compared_df.master_degree_x = compared_df.master_degree_x.apply(lambda x: clean_degree_string(x))
-compared_df.Master_Degree_2 = compared_df.Master_Degree_2.apply(lambda x: clean_degree_string(x))
-compared_df.Master_Degree_3 = compared_df.Master_Degree_3.apply(lambda x: clean_degree_string(x))
+compared_df.master_school_x = compared_df.master_school_x.apply(lambda x: clean_school_string(x))
+compared_df.Master_school_2 = compared_df.Master_school_2.apply(lambda x: clean_school_string(x))
+compared_df.Master_school_3 = compared_df.Master_school_3.apply(lambda x: clean_school_string(x))
 
-compared_df['cleaned_master_degree_y'] = compared_df.master_degree_y.apply(lambda x: str(x).replace("{'", '').replace("'}", '')).apply(lambda x: clean_degree_string(x))
-compared_df['cleaned_master_degree2'] = compared_df.master_degree2.apply(lambda x: clean_degree_string(x))
+compared_df['cleaned_master_school_y'] = compared_df.master_school_y.apply(lambda x: str(x).replace("{'", '').replace("'}", '')).apply(lambda x: clean_school_string(x))
 
-compared_df['all_masters_x'] = compared_df.master_degree_x + ' ' +  compared_df.Master_Degree_2 + ' ' + compared_df.Master_Degree_3
-compared_df['all_masters_x']= compared_df.all_masters_x.apply(lambda x: clean_degree_string(x))
+compared_df['all_masters_x'] = compared_df.master_school_x + ' ' +  compared_df.Master_school_2 + ' ' + compared_df.Master_school_3
+compared_df['all_masters_x']= compared_df.all_masters_x.apply(lambda x: clean_school_string(x))
 
-comp_master = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
-np.mean(comp_master) #61.6978
-comp_master2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
-np.mean(comp_master2) #70.3186
-comp_master3 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_master_degree_y'], x['all_masters_x']), axis = 1)
-np.mean(comp_master3) #79.4890
+comp_master_school = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_master_school_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master_school) #51.5824
+comp_master_school2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_master_school_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master_school2) #55.2417
+comp_master_school3 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_master_school_y'], x['all_masters_x']), axis = 1)
+np.mean(comp_master_school) #51.5824
+np.mean(comp_master_school2) #55.2417
+np.mean(comp_master_school3) #70.2417
 
-comp_master21 = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
-np.mean(comp_master21) #59.6648
-comp_master22 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
-np.mean(comp_master22) #73.0054
-comp_master23 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_master_degree2'], x['all_masters_x']), axis = 1)
-np.mean(comp_master23) #67.7912
 
-# masters_comp = pd.concat([
-#     compared_df['index'],
-#     compared_df.master_degree_x,
-#     compared_df.Master_Degree_2,
-#     compared_df.Master_Degree_3,
-#     compared_df.all_masters_x,
-#            compared_df.cleaned_master_degree_y,
-#            compared_df.cleaned_master_degree2,
-#            comp_master,
-#            comp_master21
-#            ], axis = 1)
-# masters_comp.to_csv('masters_comp.csv', index=False)
+# add them together in a list
+compared_df.bachelor_school_x
+compared_df.Bach_school_2
+compared_df.bachelor_school_y #remove {}
+
+
+compared_df.bachelor_school_x = compared_df.bachelor_school_x.apply(lambda x: clean_school_string(x))
+compared_df.bachelor_school_2 = compared_df.Bach_school_2.apply(lambda x: clean_school_string(x))
+compared_df['all_bachelor_x'] = compared_df.bachelor_school_x + ' ' +  compared_df.bachelor_school_x
+compared_df['all_bachelor_x']= compared_df.all_bachelor_x.apply(lambda x: clean_school_string(x))
+
+compared_df['cleaned_bachelor_school_y'] = compared_df.bachelor_school_y.apply(lambda x: str(x).replace("{'", '').replace("'}", '')).apply(lambda x: clean_school_string(x))
+
+comp_bachelor_school = compared_df.apply(lambda x: fuzz.ratio(x['all_bachelor_x'], x['cleaned_bachelor_school_y']), axis = 1)
+comp_bachelor_school2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['all_bachelor_x'], x['cleaned_bachelor_school_y']), axis = 1)
+comp_bachelor_school3 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['all_bachelor_x'], x['cleaned_bachelor_school_y']), axis = 1)
+
+np.mean(comp_bachelor_school) #32.7362
+np.mean(comp_bachelor_school2) #32.7362
+np.mean(comp_bachelor_school3) #55.8461
+
+
+compared_df.phd_school_x = compared_df.phd_school_x.apply(lambda x: clean_school_string(x))
+compared_df['cleaned_phd_school_y'] = compared_df.phd_school_y.apply(lambda x: str(x).replace("nan", '').replace("'}", '')).apply(lambda x: clean_school_string(x))
+comp_phd_school = compared_df.apply(lambda x: fuzz.token_set_ratio(x['cleaned_phd_school_y'], x['phd_school_x']), axis = 1)
+comp_phd_school1 = compared_df.apply(lambda x: fuzz.ratio(x['cleaned_phd_school_y'], x['phd_school_x']), axis = 1)
+comp_phd_school2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['cleaned_phd_school_y'], x['phd_school_x']), axis = 1)
+np.mean(comp_phd_school) #94.4450
+np.mean(comp_phd_school1) #94.4560
+np.mean(comp_phd_school2) #0.7032
+
+
+
+
+
+# --------------------------------
+
+
 
 
 # ---------------------- compare to other packages -------------------------------------------------------------------
@@ -896,3 +917,140 @@ from resume_parser import resumeparse
 #     for word in tagged.ents:
 #         if word.label_ == "PERSON":
 #             temp_person.append(word.text)
+
+pyresparser_df = pd.read_csv('pyres_df.csv', index_col = False)
+pyresparser_df.columns
+pyresparser_df['degree']
+pyresparser_df['college_name']
+gt_df = pd.read_csv('./Data/GroundTruth.csv', index_col=False)
+compared_df2 = pd.merge(gt_df, pyresparser_df, how = 'left', on = 'index')
+compared_df2.loc[0, 'college_name'] #missing
+
+
+compared_df2['degree'] = compared_df2.degree.apply(lambda x: clean_degree_string(x))
+compared_df2['cleaned_master_degree'] = compared_df2.master_degree.apply(lambda x: clean_degree_string(x))
+compared_df2['cleaned_master_degree2'] = compared_df2.Master_Degree_2.apply(lambda x: clean_degree_string(x))
+compared_df2['cleaned_master_degree3'] = compared_df2.Master_Degree_3.apply(lambda x: clean_degree_string(x))
+compared_df2['cleaned_bachelor_degree'] = compared_df2.bachelor_degree.apply(lambda x: clean_degree_string(x))
+compared_df2['cleaned_Bach_Degree_2'] = compared_df2.Bach_Degree_2.apply(lambda x: clean_degree_string(x))
+compared_df2['phd_degree'] = compared_df2.phd_degree.apply(lambda x: clean_degree_string(x))
+
+compared_df2['all_degrees'] = compared_df2.cleaned_master_degree + ' ' + \
+                               compared_df2.cleaned_master_degree2 + ' ' + \
+                               compared_df2.cleaned_master_degree3 + ' ' + \
+                               compared_df2.cleaned_bachelor_degree + ' ' + \
+                               compared_df2.cleaned_Bach_Degree_2 + ' ' + \
+                               compared_df2.phd_degree.apply(lambda x: clean_degree_string(x))
+
+comp_degrees = compared_df2.apply(lambda x: fuzz.ratio(x['degree'], x['all_degrees']), axis = 1)
+np.mean(comp_degrees) #26.5109
+comp_degrees1 = compared_df2.apply(lambda x: fuzz.token_sort_ratio(x['degree'], x['all_degrees']), axis = 1)
+np.mean(comp_degrees1) #29.1868
+comp_degrees2 = compared_df2.apply(lambda x: fuzz.token_set_ratio(x['degree'], x['all_degrees']), axis = 1)
+np.mean(comp_degrees2) #40.1153
+
+masters_comp = pd.concat([
+    compared_df['index'],
+    compared_df.master_degree_x,
+    compared_df.Master_Degree_2,
+    compared_df.Master_Degree_3,
+    compared_df.all_masters_x,
+           compared_df.cleaned_master_degree_y,
+           compared_df.cleaned_master_degree2,
+           comp_master,
+           comp_master21
+           ], axis = 1)
+masters_comp.to_csv('masters_comp.csv', index=False)
+
+# date --------------------------------------------
+compared_df[["phd_graduation_date_x",
+             "phd_graduation_date_y",
+             "master_graduation_date_x",
+             "master_graduation_date_y","bachelor_graduation_date_x","bachelor_graduation_date_y"]]
+def clean_degree_string(string_x):
+
+    if isinstance(string_x, str):
+        # return_x = ''.join([p for p in string_x if p not in punctuation])
+        # print(return_x)
+        return re.sub(' +', ' ', string_x).lower()
+    else:
+        return ''
+def date_formatting(dt_string):
+    dt_string = ''.join([i for i in dt_string if i not in punctuation])
+    #dt_string = "Sep. 2021"
+    # Convert string to datetime object
+    try:
+        dt_object = datetime.strptime(dt_string, "%m/%Y")
+        return dt_object.strftime("%b %Y")
+    except:
+        try:
+            dt_object = datetime.strptime(dt_string, "%b %Y")
+            return dt_object.strftime("%b %Y")
+        except:
+            try:
+                dt_object = datetime.strptime(dt_string, "%b. %Y")
+                return dt_object.strftime("%b %Y")
+            except:
+                try:
+                    dt_object = datetime.strptime(dt_string, "%b%Y")
+                    return dt_object.strftime("%b %Y")
+                except:
+                    try:
+                        dt_object = datetime.strptime(dt_string, "%b'%y")
+                        return dt_object.strftime("%b %Y")
+                    except:
+                        try:
+                            dt_object = datetime.strptime(dt_string, "%B %Y")
+                            return dt_object.strftime("%b %Y")
+                        except:
+                            try:
+                                dt_object = datetime.strptime(dt_string, "%B %Y")
+                                return dt_object.strftime("%b %Y")
+                            except:
+                                try:
+                                    dt_object = datetime.strptime(dt_string, "%m%Y")
+                                    return dt_object.strftime("%b %Y")
+                                except:
+                                    pass
+
+# -------- master date
+compared_df["master_graduation_date_x1"] = compared_df["master_graduation_date_x"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df["Master_graduation_date_x2"] = compared_df["Master_graduation_date_2"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df["Master_graduation_date_x3"] = compared_df["Master_graduation_date_3"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df['all_master_dates'] = compared_df.master_graduation_date_x1 + ' ' + \
+                               compared_df.Master_graduation_date_x2 + ' ' + \
+                               compared_df.Master_graduation_date_x3
+
+
+
+compared_df["master_graduation_date_y1"] = compared_df["master_graduation_date_y"].apply(lambda x:date_formatting(str(x)[2:len(str(x))-2])).apply(lambda x: clean_degree_string(x))
+comp_dates = compared_df.apply(lambda x: fuzz.ratio(x['all_master_dates'], x['master_graduation_date_y1']), axis = 1)
+np.mean(comp_dates) #20.9945
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['all_master_dates'], x['master_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #43.7582
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['all_master_dates'], x['master_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #23.0164
+
+# bachelor date ---------------
+compared_df["bachelor_graduation_date_x1"] = compared_df["bachelor_graduation_date_x"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df["bachelor_graduation_date_x2"] = compared_df["Bach_graduation_date_2"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df['all_bachelor_dates'] = compared_df.bachelor_graduation_date_x1 + ' ' + \
+                               compared_df.bachelor_graduation_date_x2
+
+compared_df["bachelor_graduation_date_y1"] = compared_df["bachelor_graduation_date_y"].apply(lambda x:date_formatting(str(x)[2:len(str(x))-2])).apply(lambda x: clean_degree_string(x))
+comp_dates = compared_df.apply(lambda x: fuzz.ratio(x['all_bachelor_dates'], x['bachelor_graduation_date_y1']), axis = 1)
+np.mean(comp_dates) #21.4175
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['all_bachelor_dates'], x['bachelor_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #39.0329
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['all_bachelor_dates'], x['bachelor_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #22.0549
+
+# phd date ---------------
+compared_df["phd_graduation_date_x1"] = compared_df["phd_graduation_date_x"].apply(lambda x:date_formatting(str(x))).apply(lambda x: clean_degree_string(x))
+compared_df["phd_graduation_date_y1"] = compared_df["phd_graduation_date_y"].apply(lambda x:date_formatting(str(x)[2:len(str(x))-2])).apply(lambda x: clean_degree_string(x))
+comp_dates = compared_df.apply(lambda x: fuzz.ratio(x['phd_graduation_date_x1'], x['phd_graduation_date_y1']), axis = 1)
+np.mean(comp_dates) #99.4505
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_sort_ratio(x['phd_graduation_date_x1'], x['phd_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #99.4505
+comp_dates2 = compared_df.apply(lambda x: fuzz.token_set_ratio(x['phd_graduation_date_x1'], x['phd_graduation_date_y1']), axis = 1)
+np.mean(comp_dates2) #0
