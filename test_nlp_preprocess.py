@@ -12,6 +12,8 @@ from nltk.stem import WordNetLemmatizer
 import pytest
 import contextualSpellCheck
 from zach_dev.src import nlp_preprocess
+from spacy.symbols import ORTH
+from spacy.tokenizer import Tokenizer
 nlp = spacy.load('en_core_web_sm')
 contextualSpellCheck.add_to_pipe(nlp)
 # stopwords=stopwords.words('english')
@@ -27,7 +29,7 @@ class TestRemovePunct(object):
                                                     ("so for me - it's a A+",['+', '-'],'so for me - its a A+')])
                                                     
     def test_normal_arguments(self,sentence,include,expected):
-        assert nlp_preprocess.remove_punct(sentence,include) == expected
+        assert nlp_preprocess.remove_punctuation(sentence,include) == expected
 
     def test_bad_arguments(self):
         sentence = ['This','is','a','list']
@@ -60,3 +62,37 @@ class TestCleanTypos(object):
 # test nouns having specific meanings. test "lol", "asap"...abbreviations
 # see corpus used for the pre-trained model - what nouns are included
 # any better models?
+
+
+class TestTokenize(object):
+    # def test_normal_arguments(self):
+    #     assert nlp_preprocess.tokenize('Gimme A-test',{"merge":["A-test"]}) == ["Gimme","A-test"]
+
+    @pytest.mark.parametrize('sentence, special_rule, split_by_sentence, expected',[
+                                ('Gimme a test',{"split":[["Gim","me"]]},'',["Gim","me","a","test"]),
+                                ('Gimme A-test',{"split":[["Gim","me"]],"merge":["A-test"]},'',["Gim","me","A-test"]),
+                                ('Gimme A-test lemme prove',{"split":[["Gim","m","e"],["lem","me"]],"merge":["A-test"]}
+                                ,'',["Gim","m","e","A-test","lem","me","prove"]),
+                                ("This is one sentence. This is another. another sentence? Yes, another.",'' ,True
+                                ,['This is one sentence.','This is another.','another sentence?','Yes, another.']),
+                                ("what about no punctuation This is another sentence",'',True, ['what about no punctuation','This is another sentence'])
+                                ])
+    def test_normal_arguments(self, sentence, special_rule, split_by_sentence, expected):
+        assert nlp_preprocess.tokenize(sentence,special_rule,split_by_sentence) == expected
+    ## currently the fifth would fail
+
+    def test_normal_arguments2(self):
+        assert nlp_preprocess.tokenize('Gimme A-test',{"merge":["A-test"]}) == ["Gimme","A-test"] 
+
+
+class TestRootWords(object):
+
+    @pytest.mark.parametrize('sentence, expected',[
+                                ('This was a test','this is a test'),
+                                ('Tests have been done', 'test have be do'),
+                                ('Interviewers and interviewees','interviewer and interviewee'),
+                                ('Sent my invites','send my invite')
+                                ])
+    def test_normal_arguments(self, sentence, expected):
+        assert nlp_preprocess.root_words(sentence) == expected
+    # the first becomes this be a test
