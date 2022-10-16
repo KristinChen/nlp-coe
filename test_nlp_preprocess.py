@@ -79,7 +79,7 @@ class TestTokenize(object):
                                 ])
     def test_normal_arguments(self, sentence, special_rule, split_by_sentence, expected):
         assert nlp_preprocess.tokenize(sentence,special_rule,split_by_sentence) == expected
-    ## currently the fifth would fail
+    ## currently the fifth would fail, but it's normal. No need to improve.
 
     def test_normal_arguments2(self):
         assert nlp_preprocess.tokenize('Gimme A-test',{"merge":["A-test"]}) == ["Gimme","A-test"] 
@@ -96,3 +96,31 @@ class TestRootWords(object):
     def test_normal_arguments(self, sentence, expected):
         assert nlp_preprocess.root_words(sentence) == expected
     # the first becomes this be a test
+
+
+class TestRemoveStopwords(object):
+
+    @pytest.mark.parametrize('sentence, add_stopwords, exclude_stopwords, expected',[
+                                ('This is a positive comment',[],[], 'positive comment'),
+                                ('This is a positive comment',['comment'],[], 'positive'),
+                                ('This is a positive comment',[],['this'],'this positive comment'),
+                                ('This product is user-friendly',[],[],'product user-friendly')
+                                ])
+    def test_normal_arguments(self, sentence, add_stopwords, exclude_stopwords, expected):
+        assert nlp_preprocess.remove_stopwords(sentence, add_stopwords, exclude_stopwords) == expected
+
+    @pytest.mark.xfail(reason='The punctuations will be remained. Discuss if this is an issue!')
+    def test_edge_case(self): 
+        assert nlp_preprocess.remove_stopwords('This -- is a masterpiece!') == 'masterpiece!'
+
+class TestNumToWords(object):
+    @pytest.mark.parametrize('sentence, expected',[
+                                ('This is 9.09!', 'This is nine point zero nine!'),
+                                ('This is -9.09.', 'This is negative nine point zero nine.'),
+                                ('2 numbers in 1 sentence','two numbers in one sentence'),
+                                ('2M dollars', 'two M dollars') # failed. it is twoM
+                                ])
+    def test_normal_arguments(self, sentence, expected):
+        assert nlp_preprocess.num_to_words(sentence) == expected
+# do we want to convert M to million etc?
+# do we care about calculations?

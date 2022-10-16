@@ -1,13 +1,10 @@
 from asyncio.windows_events import NULL
 import re
 import string
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
 import unidecode
 import contractions
 from textblob import Word
-import inflect
+from num2words import num2words
 import spacy
 from nltk.stem import WordNetLemmatizer
 from typing import List, Optional
@@ -16,7 +13,7 @@ from spacy.symbols import ORTH
 from spacy.tokenizer import Tokenizer
 nlp = spacy.load('en_core_web_sm')
 contextualSpellCheck.add_to_pipe(nlp)
-# stopwords=stopwords.words('english')
+stopwords = nlp.Defaults.stop_words
 
 ### Removing Punctuations
 def remove_punctuation(sentence : str, 
@@ -27,15 +24,20 @@ def remove_punctuation(sentence : str,
     ----------
     sentence : str :
         
-    From which to remove punctuations. 
+    From which to remove punctuations. :
         
     include : list :
         
-    A list of punctuations user wants to keep. 
+    A list of punctuations user wants to keep. :
         
+    sentence : str :
+        
+    include : list :
+         (Default value = None)
+
     Returns
-    ------- 
-    A sentence with only punctuations that user wants to keep.
+    -------
+
     
     """
     if not isinstance(sentence, str):
@@ -63,19 +65,21 @@ def remove_punctuation(sentence : str,
 
 ### Extracting the root words (lemmatization?) - might take long time to run
 def root_words(sentence: str) -> str:
-    """
-    Lemmatization
+    """Lemmatization
 
     Parameters
     ----------
     sentence : str
-    Sentence from which user wants to convert the words into root format.
+        
+    Sentence from which user wants to convert the words into root format. :
+        
+    sentence: str :
         
 
     Returns
     -------
-    A sentence consisting of words in their root formats.
 
+    
     """
     doc = nlp(sentence)
     lemm_sent = []
@@ -101,51 +105,74 @@ def remove_accents(sentence):
     return unidecode.unidecode(sentence)
 
 ### Converting to Lower case
-def to_lower(sentence):
+def to_lower(sentence : str):
     """
 
     Parameters
     ----------
     sentence :
-        
+    The sentence to be transformed to lower cases
 
     Returns
     -------
-
+    A sentence transformed to lower cases.
     
     """
     return sentence.lower()
 
 ### Removing Stop words
-def remove_stopwords(sentence, stopwords=stopwords):
+def remove_stopwords(sentence : str, add_stopwords : List = None, exclude_stopwords: List = None):
     """
 
     Parameters
     ----------
-    sentence :
-        
-    stopwords :
-        (Default value = stopwords)
+    sentence: str
+    The sentence from which user wants to remove stopwords
+    
+    add_stopwords :
+         (Default value = None)
+    User defined list of stopwords to be added to Spacy default stopwords
+    exclude_stopwords :
+         (Default value = None)
+    User defined list of stopwords to be excluded from Spacy default stopwords
 
     Returns
     -------
-
+    A sentence without stopwords
     
     """
-    return " ".join([word for word in sentence.split() if word not in stopwords])
+    stopwords = list(nlp.Defaults.stop_words)
+    if add_stopwords:
+        stopwords = stopwords + add_stopwords
+    if exclude_stopwords:
+        stopwords = [stopword for stopword in stopwords if stopword not in exclude_stopwords]
+
+    sentence = sentence.lower()
+    # make sure stopwords that are followed by punctuations will be removed as well
+    processed_sentence = " ".join([word for word in re.findall(r'[\w]+|[^\s\w]+', sentence) if word not in stopwords])
+
+    ## all punctuations between letters will be remained in same format (no space between)
+    ## For instnace, 'me@outlook.com' and 'user-friendly'.
+    check_sequence = len([m.start() for n in [re.finditer(r'\s[^\s\w]\s', processed_sentence)] for m in n])
+    for i in range(check_sequence):
+        j = re.search(r'\s[^\s\w]\s', processed_sentence).start()
+        processed_sentence = processed_sentence[:j] + processed_sentence[j+1] + processed_sentence[j+3:]
+    return processed_sentence
+
+## Those punctuations that end the sentence will have a space between them with the last letter
 
 ### Removing Extra Spaces
-def remove_spaces(sentence):
+def remove_spaces(sentence : str):
     """
 
     Parameters
     ----------
     sentence :
-        
+    The sentence user wants to remove extra spaces from.
 
     Returns
     -------
-
+    The sentence without extra spaces.
     
     """
     return re.sub('\s{2,}', ' ', sentence).strip()
@@ -153,20 +180,9 @@ def remove_spaces(sentence):
 ### Clean typos - might take long time to run
 def clean_typos(sentence : str,
                 show_typos: bool = False) -> str: 
-    """
+    
+    # ultimately it's good to allow for user to pass customized param, in dict, key: false word, value: to what is correct
 
-    Parameters
-    ----------
-    sentence : str :
-        
-    show_typos: bool :
-         (Default value = False)
-
-    Returns
-    -------
-
-    """
-# ultimately it's good to allow for user to pass customized param, in dict, key: false word, value: to what is correct
     """
     Clean typos within one sentence
 
@@ -195,25 +211,32 @@ def clean_typos(sentence : str,
     return doc._.outcome_spellCheck
 
 ### number handling (1 -> one) - might take long time to run
-def number_translate(sentence):
+## cannot handle negative number or float
+def num_to_words(sentence: str):
     """
 
     Parameters
     ----------
-    sentence :
+    sentence : str:
+    The sentence in which user wants to convert numbers to words
         
-
     Returns
     -------
-
+    Sentence with numbers converted to words
     
     """
-    p = inflect.engine()
-    sent_split = sentence.split()
-    for i, word in enumerate(sent_split):
-        if word.isdigit() and int(word) < 101:
-            sent_split[i] = p.number_to_words(word)
-    return ' '.join(sent_split)
+    check_sequence = len([m.start() for n in [re.finditer(r'\-?[\d]{1,}\.?[\d]{0,}', sentence)] for m in n])
+    for i in range(check_sequence):
+        j = re.search(r'\-?[\d]{1,}\.?[\d]{0,}', sentence).span()
+        if sentence[j[0]] != '-':
+            sentence = sentence[:j[0]] + num2words(sentence[j[0]:j[1]]) + sentence[j[1]:]
+        elif sentence[j[0]] == '-':
+            try:
+                sentence = sentence[:j[0]] + 'negative ' + num2words(sentence[j[0]:j[1]]).replace('minus','') + sentence[j[1]:]
+            except:
+                sentence = sentence[:j[0]] + 'negative' + num2words(sentence[j[0]:j[1]])  + sentence[j[1]:]
+
+    return re.sub('\s{2,}', ' ', sentence).strip()
 
 ### Expand Contractions (don't -> do not) - might take long time to run
 def expand_contractions(sentence):
@@ -237,29 +260,34 @@ def tokenize(sentence: str, special_rule: dict= None, split_by_sentence: bool = 
 
     Parameters
     ----------
-    sentence: str :
-    Sentence or sentences the user inputs.
+    sentence : str :
         
-    special_rule: dict :
-         (Default value = None)
+    Sentence or sentences the user inputs. :
+        
+    special_rule : dict :
+        (Default value = None)
         A dictionary of special rules. Keys should be either "merge" or "split", indicating if user wants certain words/phrases
         to be intact or split up. Values should be lists. If key is "merge", the value should be one list containing the words/phrases user wants to
         retain after tokenization. If key is "split", the value must be multiple lists containing parts user wants to see after tokenization.
-        Each nested list contains one specail case. Even there is only one rule created for "split", nested list should still be used. 
+        Each nested list contains one specail case. Even there is only one rule created for "split", nested list should still be used.
         For instance, if user wants to keep "up-to-date" and "value-add", split "gimme" into "gim" and "me", and split "lemme" into
         "lem" and "me", the special_rule should be assigned as:
         {'merge':['up-to-date','value-add],'split':[['gim','me'],['lem','me']]}
         If user just wants to split "gimme" into "gim" and "me", the special_rule should be assigned as:
         {'split':[['gim','me']]}
-
-
+    split_by_sentence : bool :
+        (Default value = False)
+        Set to true is user wants to tokenize by sentences rather than words. It cannot be true if special rules exist.
+    sentence: str :
+        
+    special_rule: dict :
+         (Default value = None)
     split_by_sentence: bool :
          (Default value = False)
-        Set to true is user wants to tokenize by sentences rather than words. It cannot be true if special rules exist.
 
     Returns
     -------
-    A list of tokenized words from the input.
+
     
     """
     tokenizer = Tokenizer(nlp.vocab)
