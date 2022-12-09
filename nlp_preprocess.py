@@ -15,6 +15,7 @@ import datefinder
 from spacy.symbols import ORTH
 from spacy.tokenizer import Tokenizer
 from spacy.language import Language
+from more_itertools import locate
 import lexnlp.extract.en.money
 nlp = spacy.load('en_core_web_sm')
 abbreviation_pipe = AbbreviationDetector(nlp)
@@ -78,26 +79,42 @@ def remove_punctuations(sentence : str,
 
 
 ### Extracting the root words (lemmatization?) - might take long time to run
-def lemmatize(sentence: str) -> str:
+def lemmatize(sentence: str, keep_words: list = None, keep_punctuations: bool = False) -> str:
     """Lemmatization
 
     Parameters
     ----------
     sentence : str
-        
     Sentence from which user wants to convert the words into root format. 
+
+    keep_words: list
+    A list of words that user wants to keep as original format
+
+    keep_punctuations: bool
+    A boolean indicating whether punctuations need to be removed. However, the default is to keep hyphen if there is any.
         
     Returns
     -------
-    
+    A lemmatized sentence in format of string.
     
     """
     doc = nlp(sentence)
     lemm_sent = []
-    for token in doc:
-        lemm_sent.append(token.lemma_)
-    return ' '.join(lemm_sent)
-    # need separate method to handle punction. Do not assume order
+    if keep_words:
+        for token in doc:
+            if token.text not in keep_words:
+                lemm_sent.append(token.lemma_)
+            else:
+                lemm_sent.append(token.text)
+    else:
+        for token in doc:
+            lemm_sent.append(token.lemma_)   
+                
+    if keep_punctuations:
+        return remove_spaces(" ".join(lemm_sent))
+
+    else:
+        return remove_punctuations(remove_spaces(' '.join(lemm_sent)),include=['-'])
 
 ### Removing Accents - might take long time to run
 def remove_accents(sentence):
@@ -190,11 +207,22 @@ def remove_spaces(sentence : str):
     The sentence without extra spaces.
     
     """
-    if re.search(r'\s{1,}[^\w\s]', sentence) is not None:
-        check_sequence = len([m.start() for n in [re.finditer(r'\s{1,}[^\w\s]', sentence)] for m in n])
-        for i in range(check_sequence):
-            j = re.search(r'\s{1,}[^\w\s]', sentence).start()
-            sentence = sentence[:j] + sentence[j+1:]
+    # remove extra spaces for punctuations before which there shouldn't have spaces
+    puncs1 = '''!,->./?_~})%'"'''
+    spaces_to_del_1 = [" {}".format(punc) in sentence for punc in puncs1]
+    if any(spaces_to_del_1):
+        for space in [puncs1[i] for i in [*locate(spaces_to_del_1, lambda x: x == True)]]:
+            index1 = re.search(r'[^\s][\s]+[{}]'.format(space), sentence).span()
+            sentence = sentence[:index1[0]+1] + sentence[index1[1]-1:]
+    
+    # remove extra spaces for punctuations after which there shouldn't have spaces
+    puncs2 = '''@#$-(<[{:_'''
+    spaces_to_del_2 = ["{} ".format(punc) in sentence for punc in puncs2]
+    if any(spaces_to_del_2):
+        for space in [puncs2[i] for i in [*locate(spaces_to_del_2, lambda x: x == True)]]:
+            index2 = re.search(r"[{}][\s]+[^\s]".format(space), sentence).span()
+            sentence = sentence[:index2[0]+1] + sentence[index2[1]-1:]
+                
     sentence = re.sub(r'\s{2,}', ' ', sentence).strip()
     return sentence
 
