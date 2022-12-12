@@ -275,17 +275,38 @@ def convert_NumtoWords(sentence: str):
     Sentence with numbers converted to words
     
     """
-    check_sequence = len([m.start() for n in [re.finditer(r'\-?[\d]{1,}\.?[\d]{0,}', sentence)] for m in n])
-    for i in range(check_sequence):
-        j = re.search(r'\-?[\d]{1,}\.?[\d]{0,}', sentence).span()
-        if sentence[j[0]] != '-':
-            sentence = sentence[:j[0]] + num2words(sentence[j[0]:j[1]]) + sentence[j[1]:]
-        elif sentence[j[0]] == '-':
-            try:
-                sentence = sentence[:j[0]] + 'negative ' + num2words(sentence[j[0]:j[1]]).replace('minus','') + sentence[j[1]:]
-            except:
-                sentence = sentence[:j[0]] + 'negative' + num2words(sentence[j[0]:j[1]])  + sentence[j[1]:]
-
+    # check number of fractions and iterate over fractions
+    check_fractions = len([m.start() for n in [re.finditer(r'\-?[\d]{1,}/[\d]{1,}', sentence)] for m in n])
+    for i in range(check_fractions):
+        if re.search(r'\-?[\d]{1,}/[\d]{1,}', sentence) is not None:
+            fraction_index = re.search(r'(\-?[\d]{1,})/([\d]{1,})', sentence).span()
+            slash_index = len(re.search(r'([^/]+\-?[\d]{1,})/([\d]{1,})', sentence).group(1))
+            # Add "negative" depending on whether there is minus sign
+            if sentence[fraction_index[0]] != '-':
+                sentence = sentence[:fraction_index[0]] + num2words(sentence[fraction_index[0]:slash_index]) + " over " + \
+                    num2words(sentence[slash_index+1:fraction_index[1]]) +  sentence[fraction_index[1]:]
+                                                                                                                                
+            elif sentence[fraction_index[0]] == '-' :
+                try:
+                    sentence = sentence[:fraction_index[0]] + 'negative ' + num2words(sentence[fraction_index[0]:slash_index]).replace('minus','') + " over " + \
+                        num2words(sentence[slash_index+1:fraction_index[1]]).replace('minus','') + sentence[fraction_index[1]:]                                                                                                              
+                except:
+                    sentence = sentence[:fraction_index[0]] + 'negative ' + num2words(sentence[fraction_index[0]:slash_index]) + " over " + \
+                        num2words(sentence[slash_index+1:fraction_index[1]]) + sentence[fraction_index[1]:] 
+    
+    # check number of normal numbers and iterate over them
+    check_numbers = len([m.start() for n in [re.finditer(r'\-?[\d]{1,}[\.^/]?[\d]{0,}', sentence)] for m in n])   
+    for i in range(check_numbers):
+        if re.search(r'\-?[\d]{1,}[\.^/]?[\d]{0,}', sentence) is not None:
+            number_index = re.search(r'\-?[\d]{1,}[\.^/]?[\d]{0,}', sentence).span()
+            if sentence[number_index[0]] != '-':
+                sentence = sentence[:number_index[0]] + num2words(sentence[number_index[0]:number_index[1]]) + " " + sentence[number_index[1]:]
+            elif sentence[number_index[0]] == '-' :
+                try:
+                    sentence = sentence[:number_index[0]] + 'negative ' + num2words(sentence[number_index[0]:number_index[1]]).replace('minus','') + " " + \
+                                sentence[number_index[1]:]
+                except:
+                    sentence = sentence[:number_index[0]] + 'negative' + num2words(sentence[number_index[0]:number_index[1]]) + " " + sentence[number_index[1]:]         
     return re.sub('\s{2,}', ' ', sentence).strip()
 
 ### Expand Contractions (don't -> do not) - might take long time to run
