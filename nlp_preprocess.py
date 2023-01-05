@@ -1,4 +1,6 @@
 from asyncio.windows_events import NULL
+import numpy as np
+from docx2python import docx2python
 import re
 import string
 import unidecode
@@ -186,8 +188,8 @@ def remove_stopwords(sentence : str, add_stopwords : List = None, exclude_stopwo
     ## For instnace, 'me@outlook.com' and 'user-friendly'.
     check_sequence = len([m.start() for n in [re.finditer(r'\s[^\s\w]\s', processed_sentence)] for m in n])
     for i in range(check_sequence):
-        j = re.search(r'\s[^\s\w]\s', processed_sentence).start()
-        processed_sentence = processed_sentence[:j] + processed_sentence[j+1] + processed_sentence[j+3:]
+        index = re.search(r'\s[^\s\w]\s', processed_sentence).start()
+        processed_sentence = processed_sentence[:index] + processed_sentence[index+1] + processed_sentence[index+3:]
     return processed_sentence
 
 ## Those punctuations that end the sentence will have a space between them with the last letter
@@ -209,18 +211,21 @@ def remove_spaces(sentence : str):
     """
     # remove extra spaces for punctuations before which there shouldn't have spaces
     puncs1 = '''!,->./?_~})%'"'''
-    spaces_to_del_1 = [" {}".format(punc) in sentence for punc in puncs1]
-    if any(spaces_to_del_1):
-        for space in [puncs1[i] for i in [*locate(spaces_to_del_1, lambda x: x == True)]]:
-            index1 = re.search(r'[^\s][\s]+[{}]'.format(space), sentence).span()
-            sentence = sentence[:index1[0]+1] + sentence[index1[1]-1:]
+    spaces_to_del_1 = [m.group()[-1] for n in [re.finditer(r'[^\s][\s]+[{}]'.format(punc), sentence) for punc in puncs1] for m in n]
     
     # remove extra spaces for punctuations after which there shouldn't have spaces
     puncs2 = '''@#$-(<[{:_'''
-    spaces_to_del_2 = ["{} ".format(punc) in sentence for punc in puncs2]
+    spaces_to_del_2 = [m.group()[0] for n in [re.finditer(r"[{}][\s]+[^\s]".format(punc), sentence) for punc in puncs2] for m in n]
+    
+    if any(spaces_to_del_1):
+        for i in range(len(spaces_to_del_1)):
+            index1 = re.search(r'[^\s][\s]+[{}]'.format(spaces_to_del_1[i]), sentence).span()
+            sentence = sentence[:index1[0]+1] + sentence[index1[1]-1:]
+    
+    
     if any(spaces_to_del_2):
-        for space in [puncs2[i] for i in [*locate(spaces_to_del_2, lambda x: x == True)]]:
-            index2 = re.search(r"[{}][\s]+[^\s]".format(space), sentence).span()
+        for i in range(len(spaces_to_del_2)):
+            index2 = re.search(r"[{}][\s]+[^\s]".format(spaces_to_del_2[i]), sentence).span()
             sentence = sentence[:index2[0]+1] + sentence[index2[1]-1:]
                 
     sentence = re.sub(r'\s{2,}', ' ', sentence).strip()
@@ -390,7 +395,7 @@ def detect_emojis(sentence: str, dedup: bool = False, verbose: bool = False):
         msg = "There are {} emojis detected. They are {} in position {}.".format(len(emoji_list),emojis,positions)
         print(msg)
     if dedup:
-        return set(emojis)
+        return list(set(emojis))
     else:
         return emojis
 
@@ -477,12 +482,13 @@ def detect_USPhones(sentence: str, dedup: bool = False , formatted : bool = Fals
                 detection.append(phone)
     if dedup:
         detection = list(set(detection))
+    detection = [phone for phone in detection if len(phone)>=10]
     return detection
 
 def detect_emails(sentence: str, dedup: bool=False):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     if dedup:
-        return set(re.findall(regex, sentence))
+        return list(set(re.findall(regex, sentence)))
     return re.findall(regex, sentence)
 
 def detect_citations(sentence: str, dedup: bool = False):
@@ -490,14 +496,17 @@ def detect_citations(sentence: str, dedup: bool = False):
     r"\b(?!(?:Although|Also|After|Although|As|If|Though|Because|Before|By|For|Lest|Once|Since|That|Till|Unless|Until|When|Whenever|Where|Wherever|While)\b)(?:[A-Z][A-Za-z'`-]+)(?:,? (?:(?:and |& )?(?:[A-Z][A-Za-z'`-]+)|(?:et al.?)))*(?:,? *(?:19|20)[0-9][0-9](?:, p\.? [0-9]+)?| *\((?:19|20)[0-9][0-9](?:, p\.? [0-9]+)?\))"
     citations = re.findall(regex, sentence)
     if dedup:
-        return set(citations)
+        return list(set(citations))
     return citations
 
 def detect_money(sentence: str, dedup: bool = False, formatted = False):
+    # regex for general format
     regex1 = re.compile(r"([£$€¥]?[\s]?[0-9]+[.]?[0-9]{0,}[\s]?(?:Million|Trillion|Billion|Thousand|M|mm|tn|k|t|bn)?[\s]?)(dollars|usd|euros|eur|gbp|pounds|sterlings|yuan)?", re.IGNORECASE)    
     money1 = re.findall(regex1, sentence)
+    # regex for US cents
     regex2 = re.compile(r'[0-9]+[.]?[0-9]{0,}¢')
     money2 = re.findall(regex2, sentence)
+    # regex to be excluded -  only numbers
     regex3 = re.compile(r'[0-9]+[.]?[0-9]{0,}')
     detection = [re.sub('\s{2,}', ' ', i).strip() for i in [ " ".join(i).strip() for i in money1]] + \
                        [i for i in money2]
@@ -567,6 +576,16 @@ def split_by_sentence(sentences: str, special_rules: list = None,
     else:
         doc = nlp(sentences)
         return [sent.text for sent in doc.sents]
+
+
+# return footnotes in the same sequence as it shows up in a docx file
+def detect_footnotes(docx_path, dedup=False):
+    results = docx2python(docx_path)
+    results = np.array(results.footnotes).reshape(-1,1)
+    footnotes = [footnote[re.search(r'\t',footnote).span()[1]+1:] for lst in results for footnote in lst if footnote != '' ]
+    if dedup:
+        footnotes = list(set(footnotes))
+    return footnotes
 
 # def standard_preprocess(sentence, stopword=stopwords):
 #     """
