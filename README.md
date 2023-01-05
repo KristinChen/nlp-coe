@@ -1,11 +1,8 @@
 # nlp-coe
 
-Third week’s progress:
+How to use yml file:
 
-1.	Completed developing basic functionalities of remove_stopwords() and num_to_words()
-2.	Tested normal arguments and some edge arguments on these two functions.
-
-To-dos:
-
-1.	Developing functions for detection purposes (detecting punctuations, stopwords etc. that are in the sentence). 
-2.	More smaller functions that deal with specific scenarios (For instance, dealing with factors to convert them to words).
+1. Download it.
+2. In Anaconda Powershell Prompt type in: conda activate <name of the env>
+3. In Anaconda Powershell Prompt type in: python -m ipykernel install --user --name= <name of the env>
+3. Open Jupyter Notebook, go to kernel, and select the env. 
