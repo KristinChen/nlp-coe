@@ -214,5 +214,7 @@ dependencies:
     - thinc==8.1.6
     - torch==1.13.1
     - traitlets==5.8.0
+    - typing==3.7.4.3
+    - unidecode==1.3.6
     - wcwidth==0.2.5
 prefix: C:\Users\JacobLi\anaconda3\envs\test_env3

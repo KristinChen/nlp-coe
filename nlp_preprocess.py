@@ -1,28 +1,26 @@
-from asyncio.windows_events import NULL
+# from asyncio.windows_events import NULL
 import numpy as np
 from docx2python import docx2python
 import re
 import string
 import unidecode
 import contractions
-from textblob import Word
+# from textblob import Word
 from num2words import num2words
 import spacy
-from nltk.stem import WordNetLemmatizer
-from scispacy.abbreviation import AbbreviationDetector
+# from nltk.stem import WordNetLemmatizer
+# from scispacy.abbreviation import AbbreviationDetector
 from typing import List, Optional
-import contextualSpellCheck
 import emoji
 import datefinder
 from spacy.symbols import ORTH
 from spacy.tokenizer import Tokenizer
 from spacy.language import Language
-from more_itertools import locate
-import lexnlp.extract.en.money
+# from more_itertools import locate
+# import lexnlp.extract.en.money
 nlp = spacy.load('en_core_web_sm')
-abbreviation_pipe = AbbreviationDetector(nlp)
-nlp.add_pipe(abbreviation_pipe)
-contextualSpellCheck.add_to_pipe(nlp)
+# abbreviation_pipe = AbbreviationDetector(nlp)
+# nlp.add_pipe(abbreviation_pipe)
 stopwords = nlp.Defaults.stop_words
 
 ### Removing Punctuations
