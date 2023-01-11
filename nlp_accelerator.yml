@@ -1,4 +1,4 @@
-name: test_env3
+name: nlp_accelerator
 channels:
   - defaults
   - conda-forge
